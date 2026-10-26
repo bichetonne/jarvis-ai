@@ -143,7 +143,7 @@
         </div>
     </div>
 
-    <!-- Utilisation du SDK officiel de Google via un module ES -->
+    <!-- Utilisation du SDK officiel de Google -->
     <script type="module">
         import { GoogleGenAI } from "https://esm.sh/@google/genai";
 
@@ -207,11 +207,11 @@
             const loadingMsg = ajouterMessage("Jarvis : Analyse en cours...", "jarvis-msg");
 
             try {
-                // Initialisation propre avec le SDK officiel
                 const ai = new GoogleGenAI({ apiKey: apiKey });
                 
+                // Utilisation du modèle requis : gemini-3.8-flash
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.8-flash',
                     contents: "Tu es Jarvis, un assistant virtuel intelligent, sophistiqué, courtois et fidèle, inspiré de l'univers d'Iron Man. Réponds de manière concise, élégante et efficace en français à la demande suivante : " + texteUtilisateur,
                 });
 
