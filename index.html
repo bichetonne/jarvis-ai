@@ -121,32 +121,26 @@
 
     <header>
         <h1>J.A.R.V.I.S. SYSTEMS</h1>
-        <p>Interface Neuronale Active - Propulsée par Google GenAI SDK</p>
+        <p>Interface Neuronale Active - Connexion Directe</p>
     </header>
 
     <div class="container">
-        <!-- Configuration de la clé API -->
         <div class="config-box">
             <input type="password" id="api-key" placeholder="Entrez votre clé API Gemini ici...">
             <button onclick="sauvegarderCle()">Enregistrer</button>
         </div>
 
-        <!-- Zone d'affichage des messages -->
         <div id="chat-log">
             <div class="message jarvis-msg">Jarvis : Systèmes en ligne. Bonjour monsieur. Veuillez configurer votre clé API pour commencer.</div>
         </div>
 
-        <!-- Zone de saisie -->
         <div class="input-area">
             <input type="text" id="user-input" placeholder="Donnez un ordre à Jarvis..." onkeypress="verifierEntree(event)">
             <button onclick="envoyerMessage()">Envoyer</button>
         </div>
     </div>
 
-    <!-- Utilisation du SDK officiel de Google -->
-    <script type="module">
-        import { GoogleGenAI } from "https://esm.sh/@google/genai";
-
+    <script>
         window.onload = () => {
             const savedKey = localStorage.getItem("gemini_api_key");
             if (savedKey) {
@@ -155,7 +149,7 @@
             }
         };
 
-        window.sauvegarderCle = function() {
+        function sauvegarderCle() {
             const key = document.getElementById("api-key").value.trim();
             if (key) {
                 localStorage.setItem("gemini_api_key", key);
@@ -163,22 +157,22 @@
             } else {
                 alert("Veuillez entrer une clé valide.");
             }
-        };
+        }
 
-        window.verifierEntree = function(e) {
+        function verifierEntree(e) {
             if (e.key === "Enter") {
-                window.envoyerMessage();
+                envoyerMessage();
             }
-        };
+        }
 
-        function ajouterMessage(texte, classe) {
+        function ajouterMessage(texte, classe, id = null) {
             const chatLog = document.getElementById("chat-log");
             const div = document.createElement("div");
             div.className = `message ${classe}`;
             div.innerText = texte;
+            if (id) { div.id = id; }
             chatLog.appendChild(div);
             chatLog.scrollTop = chatLog.scrollHeight;
-            return div;
         }
 
         function faireParler(texte) {
@@ -190,7 +184,7 @@
             }
         }
 
-        window.envoyerMessage = async function() {
+        async function envoyerMessage() {
             const inputField = document.getElementById("user-input");
             const texteUtilisateur = inputField.value.trim();
             const apiKey = localStorage.getItem("gemini_api_key") || document.getElementById("api-key").value.trim();
@@ -204,31 +198,47 @@
             ajouterMessage(`Vous : ${texteUtilisateur}`, "user-msg");
             inputField.value = "";
 
-            const loadingMsg = ajouterMessage("Jarvis : Analyse en cours...", "jarvis-msg");
+            // On crée un ID unique pour le message de chargement afin de le supprimer proprement
+            const loadingId = "loading-" + Date.now();
+            ajouterMessage("Jarvis : Analyse en cours...", "jarvis-msg", loadingId);
 
             try {
-                const ai = new GoogleGenAI({ apiKey: apiKey });
+                // Appel direct et stable (modèle gemini-3.8-flash)
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
                 
-                // Utilisation du modèle requis : gemini-3.8-flash
-                const response = await ai.models.generateContent({
-                    model: 'gemini-3.8-flash',
-                    contents: "Tu es Jarvis, un assistant virtuel intelligent, sophistiqué, courtois et fidèle, inspiré de l'univers d'Iron Man. Réponds de manière concise, élégante et efficace en français à la demande suivante : " + texteUtilisateur,
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: "Tu es Jarvis, un assistant virtuel intelligent, sophistiqué, courtois et fidèle, inspiré de l'univers d'Iron Man. Réponds de manière concise, élégante et efficace en français à la demande suivante : " + texteUtilisateur
+                            }]
+                        }]
+                    })
                 });
 
-                loadingMsg.remove();
+                const data = await response.json();
+                
+                // Suppression du message d'attente
+                const loadingElement = document.getElementById(loadingId);
+                if (loadingElement) loadingElement.remove();
 
-                if (response && response.text) {
-                    const reponseJarvis = response.text;
+                if (response.ok && data.candidates && data.candidates[0].content.parts[0].text) {
+                    const reponseJarvis = data.candidates[0].content.parts[0].text;
                     ajouterMessage(`Jarvis : ${reponseJarvis}`, "jarvis-msg");
                     faireParler(reponseJarvis);
                 } else {
-                    ajouterMessage("Jarvis : Erreur de traitement des circuits, monsieur.", "jarvis-msg");
+                    console.error("Détail de l'erreur :", data);
+                    const erreurMsg = data.error ? data.error.message : JSON.stringify(data);
+                    ajouterMessage(`Jarvis : Erreur API -> ${erreurMsg}`, "jarvis-msg");
                 }
 
             } catch (error) {
                 console.error(error);
-                loadingMsg.remove();
-                ajouterMessage(`Jarvis : Erreur technique -> ${error.message}`, "jarvis-msg");
+                const loadingElement = document.getElementById(loadingId);
+                if (loadingElement) loadingElement.remove();
+                ajouterMessage(`Jarvis : Crash critique du réseau -> ${error.message}`, "jarvis-msg");
             }
         }
     </script>
