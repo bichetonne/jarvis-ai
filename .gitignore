@@ -1,0 +1,5 @@
+# Environnement virtuel et secrets
+.env
+venv/
+__pycache__/
+*.pyc
