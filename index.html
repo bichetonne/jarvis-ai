@@ -203,8 +203,8 @@
             ajouterMessage("Jarvis : Analyse en cours...", "jarvis-msg");
 
             try {
-                // Utilisation du modèle gemini-1.5-flash stable
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                // Utilisation du modèle gemini-2.5-flash correct
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -227,7 +227,6 @@
                     ajouterMessage(`Jarvis : ${reponseJarvis}`, "jarvis-msg");
                     faireParler(reponseJarvis);
                 } else {
-                    // Affiche l'erreur renvoyée par l'API pour comprendre
                     console.error("Erreur API:", data);
                     const erreurMsg = data.error ? data.error.message : "Erreur inconnue";
                     ajouterMessage(`Jarvis : Erreur API -> ${erreurMsg}`, "jarvis-msg");
