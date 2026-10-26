@@ -121,7 +121,7 @@
 
     <header>
         <h1>J.A.R.V.I.S. SYSTEMS</h1>
-        <p>Interface Neuronale Active - Propulsée par Gemini</p>
+        <p>Interface Neuronale Active - Propulsée par Google GenAI SDK</p>
     </header>
 
     <div class="container">
@@ -143,7 +143,10 @@
         </div>
     </div>
 
-    <script>
+    <!-- Utilisation du SDK officiel de Google via un module ES -->
+    <script type="module">
+        import { GoogleGenAI } from "https://esm.sh/@google/genai";
+
         window.onload = () => {
             const savedKey = localStorage.getItem("gemini_api_key");
             if (savedKey) {
@@ -152,7 +155,7 @@
             }
         };
 
-        function sauvegarderCle() {
+        window.sauvegarderCle = function() {
             const key = document.getElementById("api-key").value.trim();
             if (key) {
                 localStorage.setItem("gemini_api_key", key);
@@ -160,13 +163,13 @@
             } else {
                 alert("Veuillez entrer une clé valide.");
             }
-        }
+        };
 
-        function verifierEntree(e) {
+        window.verifierEntree = function(e) {
             if (e.key === "Enter") {
-                envoyerMessage();
+                window.envoyerMessage();
             }
-        }
+        };
 
         function ajouterMessage(texte, classe) {
             const chatLog = document.getElementById("chat-log");
@@ -175,6 +178,7 @@
             div.innerText = texte;
             chatLog.appendChild(div);
             chatLog.scrollTop = chatLog.scrollHeight;
+            return div;
         }
 
         function faireParler(texte) {
@@ -186,7 +190,7 @@
             }
         }
 
-        async function envoyerMessage() {
+        window.envoyerMessage = async function() {
             const inputField = document.getElementById("user-input");
             const texteUtilisateur = inputField.value.trim();
             const apiKey = localStorage.getItem("gemini_api_key") || document.getElementById("api-key").value.trim();
@@ -200,42 +204,31 @@
             ajouterMessage(`Vous : ${texteUtilisateur}`, "user-msg");
             inputField.value = "";
 
-            ajouterMessage("Jarvis : Analyse en cours...", "jarvis-msg");
+            const loadingMsg = ajouterMessage("Jarvis : Analyse en cours...", "jarvis-msg");
 
             try {
-                // Utilisation du modèle gemini-3.8-flash requis
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: "Tu es Jarvis, un assistant virtuel intelligent, sophistiqué, courtois et fidèle, inspiré de l'univers d'Iron Man. Réponds de manière concise, élégante et efficace en français à la demande suivante : " + texteUtilisateur
-                            }]
-                        }]
-                    })
+                // Initialisation propre avec le SDK officiel
+                const ai = new GoogleGenAI({ apiKey: apiKey });
+                
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: "Tu es Jarvis, un assistant virtuel intelligent, sophistiqué, courtois et fidèle, inspiré de l'univers d'Iron Man. Réponds de manière concise, élégante et efficace en français à la demande suivante : " + texteUtilisateur,
                 });
 
-                const data = await response.json();
-                
-                const chatLog = document.getElementById("chat-log");
-                chatLog.removeChild(chatLog.lastChild);
+                loadingMsg.remove();
 
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    const reponseJarvis = data.candidates[0].content.parts[0].text;
+                if (response && response.text) {
+                    const reponseJarvis = response.text;
                     ajouterMessage(`Jarvis : ${reponseJarvis}`, "jarvis-msg");
                     faireParler(reponseJarvis);
                 } else {
-                    console.error("Erreur API:", data);
-                    const erreurMsg = data.error ? data.error.message : "Erreur inconnue";
-                    ajouterMessage(`Jarvis : Erreur API -> ${erreurMsg}`, "jarvis-msg");
+                    ajouterMessage("Jarvis : Erreur de traitement des circuits, monsieur.", "jarvis-msg");
                 }
 
             } catch (error) {
                 console.error(error);
-                const chatLog = document.getElementById("chat-log");
-                chatLog.removeChild(chatLog.lastChild);
-                ajouterMessage(`Jarvis : Erreur réseau -> ${error.message}`, "jarvis-msg");
+                loadingMsg.remove();
+                ajouterMessage(`Jarvis : Erreur technique -> ${error.message}`, "jarvis-msg");
             }
         }
     </script>
